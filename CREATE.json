@@ -1,0 +1,91 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "triggers": {
+            "When_an_HTTP_request_is_received": {
+                "type": "Request",
+                "kind": "Http",
+                "inputs": {
+                    "method": "POST",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "fileName": {
+                                "type": "string"
+                            },
+                            "fileContent": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "tags": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "actions": {
+            "Create_or_update_document_(V3)": {
+                "runAfter": {},
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['documentdb']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "body": {
+                        "id": "@{triggerBody()?['fileName']}",
+                        "fileName": "@{triggerBody()?['fileName']}",
+                        "fileContent": "@{triggerBody()?['fileContent']}",
+                        "description": "@{triggerBody()?['description']}",
+                        "tags": "@{triggerBody()?['tags']}",
+                        "uploadDate": "@{utcNow()}"
+                    },
+                    "path": "/v2/cosmosdb/@{encodeURIComponent('AccountNameFromSettings')}/dbs/@{encodeURIComponent('TeamRunDB')}/colls/@{encodeURIComponent('FiloeMetadata')}/docs"
+                }
+            },
+            "Response": {
+                "runAfter": {
+                    "Create_or_update_document_(V3)": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                    "statusCode": 201,
+                    "body": {
+                        "message": "File uploaded successfully",
+                        "status": "success"
+                    }
+                }
+            }
+        },
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "type": "Object",
+                "defaultValue": {}
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "type": "Object",
+            "value": {
+                "documentdb": {
+                    "id": "/subscriptions/9b907156-951e-4bcf-aef5-03f4367e619f/providers/Microsoft.Web/locations/swedencentral/managedApis/documentdb",
+                    "connectionId": "/subscriptions/9b907156-951e-4bcf-aef5-03f4367e619f/resourceGroups/TeamRun-TG/providers/Microsoft.Web/connections/documentdb",
+                    "connectionName": "documentdb",
+                    "connectionProperties": {}
+                }
+            }
+        }
+    }
+}
